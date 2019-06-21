@@ -8,76 +8,93 @@ use App\Answer;
 
 class Question extends Model
 {
-    use VotableTrait; 
+    use VotableTrait;
     
-    protected $fillable = ['title', 'body']; 
-
-    public function user()
-    { 
-        return $this->belongsTo(User::class); 
-    }
-
+    protected $fillable = ['title', 'body'];
+    
+    public function user() {
+        return $this->belongsTo(User::class);
+    }    
     public function setTitleAttribute($value)
-    { 
+    {
         $this->attributes['title'] = $value;
-        $this->attributes['slug'] = str_slug($value); 
+        $this->attributes['slug'] = str_slug($value);
     }
-
+    // public function setBodyAttribute($value)
+    // {
+    //     $this->attributes['body'] = clen($value);
+    // }
     public function getUrlAttribute()
     {
-        return route("questions.show", $this->slug); 
+        return route("questions.show", $this->slug);
     }
-
+    
     public function getCreatedDateAttribute()
     {
-        return $this->created_at->diffForHumans(); 
+        return $this->created_at->diffForHumans();
     }
 
     public function getStatusAttribute()
     {
-        if($this->answers_count > 0)
-        { 
-            if($this->best_answer_id){ 
-                return "answered-accepted"; 
+        if ($this->answers_count > 0) {
+            if ($this->best_answer_id) {
+                return "answered-accepted";
             }
-            return "answered"; 
+            return "answered";
         }
-        return "unanswered"; 
+        return "unanswered";
     }
 
     public function getBodyHtmlAttribute()
     {
-        return \Parsedown::instance()->text($this->body); 
+        return clean($this->bodyHtml());
     }
 
     public function answers()
     {
-        return $this->hasMany(Answer::class); 
+        return $this->hasMany(Answer::class)->orderBy('votes_count','DESC');
+        // $question->answers->count()
+        // foreach ($question->answers as $answer)
     }
-    
+
     public function acceptBestAnswer(Answer $answer)
     {
-        $this->best_answer_id = $answer->id; 
-        $this->save(); 
+        $this->best_answer_id = $answer->id;
+        $this->save();
     }
 
     public function favorites()
     {
-        return $this->belongsToMany(User::class, 'favorites')->withTimestamps();
+        return $this->belongsToMany(User::class, 'favorites')->withTimestamps(); //, 'question_id', 'user_id');
     }
 
     public function isFavorited()
     {
-        return $this->favorites()->where('user_id', auth()->id())->count() > 0; 
+        return $this->favorites()->where('user_id', auth()->id())->count() > 0;
     }
 
     public function getIsFavoritedAttribute()
     {
-        return $this->isFavorited(); 
+        return $this->isFavorited();
     }
 
     public function getFavoritesCountAttribute()
     {
-        return $this->favorites->count(); 
+        return $this->favorites->count();
+    }  
+
+    public function getExcerptAttribute()
+    {
+        return $this->excerpt(250);
+    }
+
+    public function excerpt($length)
+    {
+        return str_limit(strip_tags($this->bodyHtml()), $length);
+    }
+
+    private function bodyHtml()
+    {
+        return \Parsedown::instance()->text($this->body);
     }
 }
