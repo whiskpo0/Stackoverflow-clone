@@ -3,7 +3,7 @@
     <i class="fas fa-star fa-2x"></i>
     <span class="favorites-count">{{ $model->favorites_count }}</span>
 </a>
-<form id="favorite-{{ $name }}-{{ $model->id }}" action="/{{ $firstURISegment }}/{{ $model->id }}/favorites" method="POST" style="display:none;">
+<form id="favorite-{{ $name }}-{{ $model->id }}" action="/questions/{{ $model->id }}/favorites" method="POST" style="display:none;">
 
 @csrf
     @if($model->is_favorited)
